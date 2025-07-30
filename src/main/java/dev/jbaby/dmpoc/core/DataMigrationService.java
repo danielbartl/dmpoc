@@ -1,5 +1,6 @@
 package dev.jbaby.dmpoc.core;
 
+import com.mongodb.WriteConcern;
 import dev.jbaby.dmpoc.source.Customer;
 import dev.jbaby.dmpoc.source.CustomerJpaRepository;
 import dev.jbaby.dmpoc.target.CustomerDocument;
@@ -10,6 +11,8 @@ import org.jobrunr.jobs.context.JobDashboardProgressBar;
 import org.jobrunr.jobs.context.JobRunrDashboardLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,10 +29,13 @@ public class DataMigrationService {
 
     private final CustomerJpaRepository jpaRepository;
     private final CustomerMongoRepository mongoRepository;
+    private final MongoDatabaseFactory mongoDatabaseFactory;
 
-    public DataMigrationService(CustomerJpaRepository jpaRepository, CustomerMongoRepository mongoRepository) {
+
+    public DataMigrationService(CustomerJpaRepository jpaRepository, CustomerMongoRepository mongoRepository, MongoDatabaseFactory mongoDatabaseFactory) {
         this.jpaRepository = jpaRepository;
         this.mongoRepository = mongoRepository;
+        this.mongoDatabaseFactory = mongoDatabaseFactory;
     }
 
     @Job(name = "Customer Data Migration", retries = 2)
@@ -41,6 +47,10 @@ public class DataMigrationService {
         final Logger dashboardLogger = new JobRunrDashboardLogger(log);
 
         JobDashboardProgressBar progressBar = jobContext.progressBar(100);
+
+        MongoTemplate mongoTemplate = new MongoTemplate(mongoDatabaseFactory);
+        // set UNACKNOWLEDGED write concern for speed
+        mongoTemplate.setWriteConcern(WriteConcern.UNACKNOWLEDGED);
 
         dashboardLogger.info("Starting customer data migration from PostgreSQL to MongoDB...");
         mongoRepository.deleteAll(); // Clear existing data before migration
@@ -63,7 +73,9 @@ public class DataMigrationService {
                 batch.add(mapToDocument(customer));
                 count++;
                 if (batch.size() == batchSize) {
-                    mongoRepository.saveAll(batch);
+                    // Use the specialized template for a high-speed, fire-and-forget batch insert
+                    mongoTemplate.insertAll(batch);
+                    //mongoRepository.saveAll(batch);
                     batch.clear();
                     dashboardLogger.info("Migrated {} customers...", count);
                     progressBar.setProgress((int) ((count * 100) / totalCustomers)); // Update progress bar
@@ -71,7 +83,8 @@ public class DataMigrationService {
             }
 
             if (!batch.isEmpty()) {
-                mongoRepository.saveAll(batch);
+                //mongoRepository.saveAll(batch);
+                mongoTemplate.insertAll(batch);
                 dashboardLogger.info("Migrated final batch of {} customers.", batch.size());
             }
         }
