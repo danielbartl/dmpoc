@@ -41,7 +41,7 @@ The project is configured to use Spring Boot's Docker Compose support, which han
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/danielbartl/dmpoc.git
     cd dmpoc
     ```
 
