@@ -1,0 +1,45 @@
+plugins {
+    id("org.springframework.boot") version "3.5.4"
+    id("io.spring.dependency-management") version "1.1.5"
+    java
+}
+
+group = "dev.jbaby"
+version = "0.0.1-SNAPSHOT"
+
+java.sourceCompatibility = JavaVersion.VERSION_17
+
+repositories {
+    mavenCentral()
+}
+
+val jobrunrVersion by extra("8.0.1")
+val springdocVersion by extra("2.8.9")
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
+    implementation("net.datafaker:datafaker:2.4.4")
+    implementation("org.jobrunr:jobrunr-spring-boot-3-starter:$jobrunrVersion")
+
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+    runtimeOnly("org.postgresql:postgresql")
+
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    annotationProcessor("org.projectlombok:lombok")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:mongodb")
+    testImplementation("org.testcontainers:postgresql")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
